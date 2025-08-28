@@ -1,0 +1,33 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+    ports:
+      - "1433:1433"       # opcional para conectarte desde fuera (Azure Data Studio/SSMS)
+    volumes:
+      - sql_data:/var/opt/mssql
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./BasketApi
+      dockerfile: Dockerfile
+    container_name: basketapi
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      # ConnectionStrings:Default (doble guion bajo = ":")
+      - ConnectionStrings__Default=Server=sqlserver,1433;Database=BasketDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True;
+      # CORS
+      - Cors__AllowedOrigins=http://localhost:4200
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - sqlserver
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  sql_data:
